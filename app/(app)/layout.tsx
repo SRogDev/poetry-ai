@@ -19,10 +19,10 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 const NAV = [
-  { href: "/app/chat", label: "Crear", Icon: Sparkles },
-  { href: "/app/lovis", label: "Lovis", Icon: Gift },
-  { href: "/app/recipients", label: "Personas", Icon: HeartHandshake },
-  { href: "/app/cuenta", label: "Cuenta", Icon: UserRound },
+  { href: "/chat", label: "Crear", Icon: Sparkles },
+  { href: "/lovis", label: "Lovis", Icon: Gift },
+  { href: "/recipients", label: "Personas", Icon: HeartHandshake },
+  { href: "/cuenta", label: "Cuenta", Icon: UserRound },
 ] as const;
 
 function RosesChip() {
@@ -49,7 +49,7 @@ function RosesChip() {
 
   return (
     <Link
-      href="/app/cuenta"
+      href="/cuenta"
       aria-label="Mis rosas"
       className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-sm font-semibold text-pink-700 transition-colors duration-200 hover:bg-pink-100 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-300 dark:hover:bg-pink-900"
     >
@@ -108,7 +108,7 @@ export default function AppLayout({
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-3">
           <Link
-            href="/app/chat"
+            href="/chat"
             className="text-lg font-bold tracking-tight"
             aria-label="Poetry AI — inicio"
           >

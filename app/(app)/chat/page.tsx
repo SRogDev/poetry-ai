@@ -708,7 +708,7 @@ export default function ChatPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             Guarda a tus personas en{" "}
             <Link
-              href="/app/recipients"
+              href="/recipients"
               className="font-semibold text-pink-600 underline-offset-2 hover:underline"
             >
               Personas
