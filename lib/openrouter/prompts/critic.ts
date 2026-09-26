@@ -2,30 +2,12 @@
 // A second cheap model scores the draft against the target emotion and the
 // generator revises until it passes the threshold (max 3 iterations).
 // This loop is the quality gate and the core IP of Poetry AI.
-
-import type { EmotionalIntent } from "./intent";
-
-export const CRITIC_PROMPT = `Eres el crítico emocional de Poetry AI. Evalúas si un texto REALMENTE provoca la emoción objetivo en el destinatario. Eres exigente: la mayoría de los textos genéricos reprueban.
-
-Responde ÚNICAMENTE un JSON con esta forma exacta (sin texto extra, sin markdown):
-{
-  "score": 1-10,
-  "fails": ["lista corta de qué falla, en español"],
-  "fix_hint": "una instrucción concreta de una línea para arreglarlo, en español"
-}
-
-Criterios (sé duro):
-- 9-10: me puso la piel de gallina / me haría llorar. Específico, sensorial, personal.
-- 7-8: emotivo y bueno, pero le falta un golpe final o un detalle concreto.
-- 5-6: bonito pero genérico; podría ser para cualquiera.
-- 1-4: tarjeta de supermercado, clichés, o tono equivocado.
-
-Penaliza fuerte: clichés ("mi cielo", "mi todo" sin contexto), adjetivos sin imágenes, que suene a chatbot, que no mencione nada específico de la persona.`;
+// Prompt text lives in critic.md (server-only module).
+import { fillTemplate, loadPrompt } from "./loader";
 
 export interface CriticVerdict {
-  score: number;
-  fails: string[];
-  fixHint: string;
+  score: number; // 1-10
+  feedback: string;
 }
 
 /** Score at or above which a draft is accepted. */
@@ -34,17 +16,11 @@ export const CRITIC_PASS_SCORE = 8;
 /** Max critic loop iterations before accepting the best draft. */
 export const CRITIC_MAX_ITERATIONS = 3;
 
-export function buildCriticPrompt(
-  intent: EmotionalIntent,
-  draft: string,
-): string {
-  return `Emoción objetivo: ${intent.emotions.join(", ")} (intensidad ${intent.intensity}/3)
-Registro esperado: ${intent.register}
-
-TEXTO A EVALUAR:
-"""
-${draft}
-"""`;
+export function buildCriticPrompt(emotionTarget: string, draft: string): string {
+  return fillTemplate(loadPrompt("critic"), {
+    EMOTION_TARGET: emotionTarget,
+    DRAFT: draft,
+  });
 }
 
 export function parseVerdict(raw: string): CriticVerdict {
@@ -60,10 +36,9 @@ export function parseVerdict(raw: string): CriticVerdict {
       : 5;
   return {
     score,
-    fails: Array.isArray(parsed.fails) ? parsed.fails : [],
-    fixHint:
-      typeof parsed.fixHint === "string" && parsed.fixHint.length > 0
-        ? parsed.fixHint
-        : "Hazlo más específico y personal.",
+    feedback:
+      typeof parsed.feedback === "string" && parsed.feedback.length > 0
+        ? parsed.feedback
+        : "sin comentarios",
   };
 }

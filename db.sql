@@ -16,6 +16,7 @@ create table if not exists public.profiles (
   id           uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   roses_balance int not null default 10,
+  last_monthly_grant date,   -- last calendar month the free grant was issued
   created_at   timestamptz not null default now()
 );
 
@@ -41,6 +42,7 @@ create table if not exists public.dedications (
   brief          text,                      -- the user's original brief
   output         jsonb not null default '{}'::jsonb,
   roses_spent    int not null default 0,
+  lovi_id        uuid references public.lovis(id) on delete set null,
   share_id       text,                      -- -> share_links.id when published
   created_at     timestamptz not null default now()
 );
@@ -153,8 +155,8 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, display_name)
-  values (new.id, new.raw_user_meta_data ->> 'display_name')
+  insert into public.profiles (id, display_name, last_monthly_grant)
+  values (new.id, new.raw_user_meta_data ->> 'display_name', date_trunc('month', now())::date)
   on conflict (id) do nothing;
 
   insert into public.roses_ledger (user_id, delta, reason)
@@ -168,6 +170,96 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Atomic spend with insufficient-funds guard. Throws when the balance is
+-- too low, so the check and the mutation can never race. Call via service role.
+create or replace function public.spend_roses(
+  p_user_id uuid,
+  p_amount  int,
+  p_reason  text,
+  p_ref     text default null
+) returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  if p_amount <= 0 then
+    raise exception 'spend_roses: amount must be positive';
+  end if;
+
+  update public.profiles
+  set roses_balance = roses_balance - p_amount
+  where id = p_user_id
+    and roses_balance >= p_amount
+  returning roses_balance into v_balance;
+
+  if not found then
+    raise exception 'insufficient_roses';
+  end if;
+
+  insert into public.roses_ledger (user_id, delta, reason, ref)
+  values (p_user_id, -p_amount, p_reason, p_ref);
+
+  return v_balance;
+end;
+$$;
+
+-- Monthly free grant (20 roses): idempotent per calendar month.
+-- Call at the start of every spend-gated generation; no-ops when already granted.
+create or replace function public.ensure_monthly_grant(p_user_id uuid)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_month_start date := date_trunc('month', now())::date;
+  v_balance int;
+begin
+  update public.profiles
+  set roses_balance = roses_balance + 20,
+      last_monthly_grant = v_month_start
+  where id = p_user_id
+    and (last_monthly_grant is null or last_monthly_grant < v_month_start)
+  returning roses_balance into v_balance;
+
+  if found then
+    insert into public.roses_ledger (user_id, delta, reason)
+    values (p_user_id, 20, 'monthly_grant');
+  else
+    select roses_balance into v_balance
+    from public.profiles where id = p_user_id;
+  end if;
+
+  return v_balance;
+end;
+$$;
+
+-- Storage --------------------------------------------------------------------
+-- Public bucket for dedication photos (slideshow uploads, Lovi photos).
+-- The app uploads client-side with the anon key; files are public-read.
+insert into storage.buckets (id, name, public)
+values ('dedications', 'dedications', true)
+on conflict (id) do nothing;
+
+drop policy if exists "dedications_public_read" on storage.objects;
+create policy "dedications_public_read" on storage.objects
+  for select using (bucket_id = 'dedications');
+
+drop policy if exists "dedications_auth_insert" on storage.objects;
+create policy "dedications_auth_insert" on storage.objects
+  for insert with check (
+    bucket_id = 'dedications' and auth.role() = 'authenticated'
+  );
+
+drop policy if exists "dedications_auth_delete" on storage.objects;
+create policy "dedications_auth_delete" on storage.objects
+  for delete using (
+    bucket_id = 'dedications' and auth.role() = 'authenticated'
+  );
 
 -- Row Level Security ---------------------------------------------------------
 alter table public.profiles      enable row level security;

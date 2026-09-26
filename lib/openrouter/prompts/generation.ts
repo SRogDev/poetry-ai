@@ -1,71 +1,51 @@
 // Emotion Engine — step 3: emotionally-targeted generation.
 // Prompts encode concrete emotional techniques, not generic "write a poem".
+// Prompt text lives in generation.md (server-only module).
+import type {
+  DedicationFormat,
+  RecipientProfile,
+} from "../emotion-engine";
+import { fillTemplate, loadPrompt } from "./loader";
 
-import type { EmotionalIntent } from "./intent";
+export const FORMAT_GUIDE: Record<DedicationFormat, string> = {
+  poem: "poema de 8–16 versos",
+  letter: "carta de 120–220 palabras",
+  quote: "frase de 1–2 líneas",
+  video: "texto para video narrado: 6–10 líneas cortas y potentes",
+  slideshow: "pies de foto poéticos: 8–12 líneas, una por foto, máximo 10 palabras cada una",
+  song: "letra de canción: verso, pre-coro y coro, con estribillo memorable",
+};
 
-export interface RecipientProfile {
-  name: string;
-  nickname?: string | null;
-  relationship?: string | null;
-  notes?: string | null; // free text: what moves them, shared memories, cues
-  memories?: string[]; // pulled from Supermemory (Phase 1)
+const INTENSITY_LABEL: Record<1 | 2 | 3, string> = {
+  1: "sutil",
+  2: "profundo",
+  3: "devastador",
+};
+
+export interface GenerationContext {
+  emotionTarget: string;
+  intensity: 1 | 2 | 3;
+  recipient: RecipientProfile;
+  occasion: string | null;
+  brief: string;
+  format: DedicationFormat;
 }
 
-export type DedicationFormat = "poem" | "letter" | "quote" | "video" | "song";
-
-const FORMAT_GUIDE: Record<DedicationFormat, string> = {
-  poem: "Un poema de 4 a 6 estrofas cortas, verso libre con ritmo. Cada estrofa separada por una línea en blanco.",
-  letter:
-    "Una carta íntima de 150-250 palabras, con saludo y despedida. Tono de carta real, no de tarjeta genérica.",
-  quote:
-    "Una sola frase poderosa de máximo 25 palabras, estilo cita para imagen. Sin comillas.",
-  video:
-    "Un guion de video: 6 a 10 líneas cortas, una por escena, cada línea máximo 12 palabras. Marca el tono [tierno] [intenso] al inicio de las líneas clave.",
-  song: "Letra de canción: verso, pre-coro y coro que se repite. Lenguaje cantable, sílabas simples.",
-};
-
-const REGISTER_GUIDE: Record<EmotionalIntent["register"], string> = {
-  "gen-z":
-    "Voz latina actual, joven y honesta. Español neutro latinoamericano con giros naturales (no caricatura, no exceso de slang). Directa, sin cursilería vacía.",
-  "warm-family":
-    "Voz cálida y respetuosa, como una carta familiar que se guarda toda la vida. Tierna sin ser infantil.",
-  formal: "Voz cuidada y elegante, distancia respetuosa.",
-};
-
-export function buildGenerationPrompt(
-  intent: EmotionalIntent,
-  recipient: RecipientProfile,
-  format: DedicationFormat,
-  brief: string,
-): string {
+export function buildGenerationPrompt(ctx: GenerationContext): string {
+  const recipientLine = `${ctx.recipient.name}${ctx.recipient.relationship ? ` (${ctx.recipient.relationship})` : ""}${ctx.recipient.notes ? ` — ${ctx.recipient.notes}` : ""}`;
   const memories =
-    recipient.memories && recipient.memories.length > 0
-      ? `\nRecuerdos reales con ${recipient.name} (ÚSALOS, son tu mejor material):\n- ${recipient.memories.join("\n- ")}`
+    ctx.recipient.memories && ctx.recipient.memories.length > 0
+      ? `## Memoria sobre esta persona\n${ctx.recipient.memories.map((m) => `- ${m}`).join("\n")}\n(Úsala para detalles concretos; nunca la menciones explícitamente.)`
       : "";
-  const notes = recipient.notes
-    ? `\nSobre ${recipient.name}: ${recipient.notes}`
-    : "";
-
-  return `Eres el generador emocional de Poetry AI. Creas contenido en español latinoamericano diseñado para PROVOCAR una emoción específica en una persona real. La IA es co-creadora: el detalle debe sentirse personal y humano, nunca genérico.
-
-OBJETIVO EMOCIONAL: ${intent.emotions.join(", ")} (intensidad ${intent.intensity}/3)
-${intent.occasion ? `OCASIÓN: ${intent.occasion}` : ""}
-DESTINATARIO: ${recipient.name}${recipient.relationship ? ` (${recipient.relationship})` : ""}${notes}${memories}
-
-REGISTRO: ${REGISTER_GUIDE[intent.register]}
-
-FORMATO:
-${FORMAT_GUIDE[format]}
-
-TÉCNICAS OBLIGATORIAS:
-1. Especificidad mata generalidad: un recuerdo concreto ("como aquella vez en la playa") vale más que mil adjetivos.
-2. Detalle sensorial: algo que se ve, se huele, se escucha, se toca.
-3. El nombre de la persona aparece POCO (1-2 veces): así cada aparición pega fuerte.
-4. Estructura de revelación: empieza suave, construye, cierra con la línea más fuerte al final.
-5. Cero frases de tarjeta de supermercado ("eres lo mejor que me pasó" sin contexto no vale).
-6. Autenticidad: debe sonar como algo que el usuario REALMENTE diría, elevado a poesía.
-
-Brief original del usuario: "${brief}"
-
-Responde SOLO con el contenido, sin explicaciones ni títulos.`;
+  return fillTemplate(loadPrompt("generation"), {
+    EMOTION_TARGET: ctx.emotionTarget,
+    INTENSITY_LABEL: `${ctx.intensity} (${INTENSITY_LABEL[ctx.intensity]})`,
+    RECIPIENT_LINE: recipientLine,
+    OCCASION: ctx.occasion ?? "sin ocasión especial",
+    BRIEF: ctx.brief,
+    MEMORY_BLOCK: memories,
+  }).replace(
+    "4. Longitud según formato: poema 8–16 versos · carta 120–220 palabras · frase 1–2 líneas · video 6–10 líneas cortas.",
+    `4. Formato pedido: ${FORMAT_GUIDE[ctx.format]}.`,
+  );
 }
