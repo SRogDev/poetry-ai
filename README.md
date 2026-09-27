@@ -4,7 +4,7 @@
 
 Solo LatAm, solo español. Primero Gen Z móvil; el romance es la cuña, la familia y la amistad son la expansión.
 
-> Open source (MIT). El plan completo del producto vive en `~/workspace/plans/poetry-ai/PLAN.md` — este repo es el scaffold Fase 0.
+> Open source (MIT). v1 built and live in this repo: Emotion Engine, all content formats, recipients + @nicknames, roses economy, share pages.
 
 ## ✨ Conceptos
 
