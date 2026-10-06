@@ -1,79 +1,53 @@
-# 🌹 Poetry AI
+# Poetry AI 🌹
 
-**Detalles emocionales para quien amas.** Una IA a la que le dices qué quieres provocar — *"quiero que llore de felicidad"*, *"quiero reconciliarme con mi papá"* — y ella crea el contenido emocional: poemas, cartas de amor, videos dedicados con narración… y **Lovis**: detalles interactivos donde el link compartido *es* el regalo.
+**Emotional dedications for someone you love.** Tell the AI what you want to provoke — *"quiero que llore de felicidad"*, *"quiero reconciliarme con mi papá"* — and it creates the emotional content: poems, love letters, narrated poem videos, photo slideshows, AI love songs, and **Lovis**: interactive dedication experiences where the share link IS the gift.
 
-Solo LatAm, solo español. Primero Gen Z móvil; el romance es la cuña, la familia y la amistad son la expansión.
+Spanish-only, LatAm-only, Gen-Z-first, mobile-first. Romance is the wedge; family and friendship are the expansion.
 
-> Open source (MIT). v1 built and live in this repo: Emotion Engine, all content formats, recipients + @nicknames, roses economy, share pages.
+## Concepts
 
-## ✨ Conceptos
+- **Emotion Engine** — the heart of the product: intent extraction → recipient psychology → targeted generation → emotion critic loop → format adaptation. Prompt engineering over cheap OpenRouter models, not own models.
+- **Lovis** — user-created dedication artifacts (*"a starry sky where each star is a memory"*): the AI generates the interactive piece, you publish it, and it lives in a public gallery where others can remix it.
+- **Roses** 🌹 — the credit currency: every generation costs roses; subscriptions and top-ups via Polar (behind a flag until payouts are verified).
+- **Recipients** — via @nickname; every dedication gets a public `/s/[id]` page optimized for WhatsApp preview.
 
-- **Emotion Engine** — el corazón del producto: *prompt engineering*, no modelos propios. Del brief se extrae la intención emocional, se cruza con el perfil psicológico del destinatario, se genera con técnicas emocionales concretas y un **crítico emocional** itera hasta que el texto realmente provoca la emoción objetivo. Todo vía [OpenRouter](https://openrouter.ai).
-- **Lovis** — artefactos de dedicatoria creados por usuarios: describes la idea en el chat (*"un cielo estrellado donde cada estrella es un recuerdo"*), la IA genera el detalle interactivo, lo publicas y queda en una galería comunitaria donde todos pueden usarlo y remixearlo. *"Detalles que se sienten."*
-- **Rosas** 🌹 — la moneda: cada generación cuesta rosas; las suscripciones y recargas van por [Polar](https://polar.sh) (detrás de un flag hasta verificar payouts).
-- **El link es el regalo** — cada dedicatoria tiene su página pública `/s/[id]` optimizada para previsualizar en WhatsApp.
+## Status
 
-## 🧱 Stack
+- **v1 built and pushed (2026-09-26, `main` @ `21187d5`):** all formats, recipients, Roses ledger + spend-gate RPCs, share pages + OG images, Polar behind `POLAR_ENABLED=false`.
+- **Verified:** 106 vitest green, tsc/eslint clean, 35/35 pages build. AI paths mock-verified (real keys not yet added).
+- **Blocked on setup:** Supabase project + apply `db.sql`, env vars (`OPENROUTER_API_KEY`), Polar later.
 
-- **Next.js 16** (App Router, full stack) + TypeScript + Tailwind
-- **Supabase** — Auth, Postgres y Storage. El schema vive en [`db.sql`](./db.sql) (fuente de verdad, se aplica en el SQL editor)
-- **Supermemory** — memoria de conversaciones y de personas
-- **OpenRouter** — toda la IA (texto, imagen, video, voz)
-- **Polar** — billing (flaggeado)
-- **Serwist** — PWA instalable (service worker); camino a Play Store vía TWA
+## Stack
 
-## 🚀 Cómo correrlo
+Next.js 16 (App Router, full stack) + TypeScript + Tailwind · Supabase (Auth, Postgres, Storage + RLS) · Supermemory (conversation + people memory) · OpenRouter (text, image, video, voice) · Polar (billing, flagged) · Serwist (installable PWA)
+
+## Quickstart
 
 ```bash
-# 1. Clona e instala
 git clone https://github.com/SRogDev/poetry-ai.git
 cd poetry-ai
 npm install
 
-# 2. Crea un proyecto en Supabase y pega db.sql en el SQL editor
-#    https://supabase.com/dashboard → New project → SQL Editor → pega db.sql → Run
-
-# 3. Configura el entorno
-cp .env.example .env.local
-# llena NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-# OPENROUTER_API_KEY, SUPERMEMORY_API_KEY (Polar cuando se verifique)
-
-# 4. Corre
+# 1. Create a Supabase project, paste db.sql in the SQL editor and run it
+# 2. cp .env.example .env.local and fill in:
+#    NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+#    OPENROUTER_API_KEY, SUPERMEMORY_API_KEY (Polar when verified)
 npm run dev
 ```
 
-## 📁 Estructura
+## Structure
 
 ```
 poetry-ai/
-├── db.sql                  # schema completo (tablas + RLS) — fuente de verdad
-├── app/
-│   ├── (marketing)/        # landing en español
-│   ├── (app)/              # chat, recipients, lovis (galería + estudio)
-│   ├── s/[id]/             # páginas públicas de dedicatorias
-│   └── api/                # webhooks (Polar), generación, OG images
-├── components/lovis/       # renderer sandboxed de Lovis (iframe)
-├── lib/
-│   ├── openrouter/         # cliente + prompts del Emotion Engine
-│   ├── supermemory/        # memoria de conversaciones/personas
-│   ├── lovis/              # contrato de slots, sanitización
-│   ├── roses/              # balance y spend-gate
-│   └── share/              # OG images, watermark, presets de export
-└── public/music/           # tracks libres de derechos (curaduría)
+├── db.sql            # full schema (tables + RLS) — source of truth
+├── app/              # routes: chat, recipients, lovis, s/[id], api/
+├── components/       # UI incl. sandboxed Lovis renderer (iframe)
+├── lib/              # openrouter/ (Emotion Engine), supermemory/,
+│                     # lovis/ (slots, sanitization), roses/ (ledger),
+│                     # share/ (OG images, watermark, export presets)
+└── public/music/     # royalty-free track curation
 ```
 
-## 🗺️ Roadmap
+## License
 
-- **Fase 0** (este scaffold): base Supabase, `db.sql`, CI, landing, PWA-ready
-- **Fase 1**: Auth, recipients, chat + Supermemory, Emotion Engine v1 (poema + carta), rosas, video de frase gratis
-- **Fase 2**: compositor de video en el cliente, share pages + OG, watermark, **Lovis studio + galería**
-- **Fase 3**: billing Polar, suscripciones, recargas, empaquetado TWA → Play Store
-- **Fase 4**: canciones, fondos de video generativo, SEO, campañas estacionales, recompensas a creadores de Lovis
-
-## 🤝 Contribuir
-
-PRs bienvenidos. Lee el plan del producto (`~/workspace/plans/poetry-ai/PLAN.md`) antes de proponer cambios de producto.
-
----
-
-*Basado en el [Next.js + Supabase Starter](https://github.com/vercel/next.js/tree/canary/examples/with-supabase).*
+MIT — see [LICENSE](LICENSE).
