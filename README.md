@@ -19,7 +19,7 @@ Spanish-only, LatAm-only, Gen-Z-first, mobile-first. Romance is the wedge; famil
 
 ## Stack
 
-Next.js 16 (App Router, full stack) + TypeScript + Tailwind · Supabase (Auth, Postgres, Storage + RLS) · Supermemory (conversation + people memory) · OpenRouter (text, image, video, voice) · Polar (billing, flagged) · Serwist (installable PWA)
+Next.js 16.4 (App Router, full stack) + TypeScript + Tailwind · Supabase (Auth, Postgres, Storage + RLS) · Supermemory (conversation + people memory) · OpenRouter (text, image, video, voice) · Polar (billing, flagged) · Serwist (installable PWA)
 
 ## Quickstart
 
